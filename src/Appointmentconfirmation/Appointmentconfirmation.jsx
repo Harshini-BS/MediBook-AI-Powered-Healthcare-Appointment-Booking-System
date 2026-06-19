@@ -9,10 +9,11 @@ const AppointmentConfirmation = ({ appointment, pdfUrl, onBookAnother }) => {
     toast.success('Reference ID copied!');
   };
 
-  const downloadPdf = () => {
-    const url = `http://localhost:5000${pdfUrl}`;
-    window.open(url, '_blank');
-  };
+  // ✅ New version
+const downloadPdf = () => {
+  const base = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+  window.open(`${base}/api/appointments/${appointment.referenceId}/pdf`, '_blank');
+};
 
   const priorityColor = { normal: '#22c55e', urgent: '#f59e0b', emergency: '#ef4444' };
 
@@ -95,12 +96,13 @@ const AppointmentConfirmation = ({ appointment, pdfUrl, onBookAnother }) => {
       </div>
 
       <div className="confirmation__actions">
-        {pdfUrl && (
-          <button className="btn-pdf" onClick={downloadPdf}>
-            <Download size={16}/>
-            Download PDF
-          </button>
-        )}
+        // ✅ New version
+            {appointment.referenceId && (
+            <button className="btn-pdf" onClick={downloadPdf}>
+              <Download size={16}/>
+              Download PDF
+            </button>
+)}
         <button className="btn-again" onClick={onBookAnother}>
           + Book Another
         </button>
