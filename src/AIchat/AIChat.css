@@ -191,3 +191,23 @@
   display: inline-block;
   margin-right: 4px;
 }
+
+/* Booking PDF button inside chat */
+.msg-bubble-wrap { display: flex; flex-direction: column; gap: 8px; max-width: 85%; }
+
+.pdf-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #0f4c81, #1a6bb5);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+.pdf-download-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,76,129,0.4); }
