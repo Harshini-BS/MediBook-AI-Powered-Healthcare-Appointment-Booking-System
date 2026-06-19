@@ -14,12 +14,8 @@ const {
 router.get('/stats', getDashboardStats);
 router.post('/', createAppointment);
 router.get('/', getAllAppointments);
-router.get('/:referenceId', getAppointmentByRef);
-router.patch('/:referenceId/status', updateAppointmentStatus);
-router.delete('/:referenceId', deleteAppointment);
 
-
-
+// IMPORTANT: specific routes BEFORE the generic /:referenceId route
 router.get('/:referenceId/pdf', async (req, res) => {
   try {
     const appointment = await Appointment.findOne({ referenceId: req.params.referenceId });
@@ -31,5 +27,9 @@ router.get('/:referenceId/pdf', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+router.get('/:referenceId', getAppointmentByRef);
+router.patch('/:referenceId/status', updateAppointmentStatus);
+router.delete('/:referenceId', deleteAppointment);
 
 module.exports = router;
