@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const connectDB = require('./utils/db');
 
 const appointmentRoutes = require('./routes/appointmentRoutes');
-const aiRoutes = require('./routes/aiRoutes');
+const aiRoutes = require('./routes/airoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
