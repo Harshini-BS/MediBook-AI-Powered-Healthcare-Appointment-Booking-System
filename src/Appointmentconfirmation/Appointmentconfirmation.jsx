@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircle, Download, Copy, Calendar, Building, User, Clock, Phone, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
-import './AppointmentConfirmation.css';
+import './Appointmentconfirmation.css';
 
 const AppointmentConfirmation = ({ appointment, pdfUrl, onBookAnother }) => {
   const copyRefId = () => {

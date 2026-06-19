@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, Phone, Mail, Calendar, Building, Stethoscope, Clock, FileText, AlertCircle, Sparkles } from 'lucide-react';
 import { appointmentAPI, aiAPI } from '../Services/api';
 import toast from 'react-hot-toast';
-import './BookingForm.css';
+import './Bookingform.css';
 
 const DEPARTMENTS = [
   'General Medicine','Cardiology','Orthopedics','Neurology','Dermatology',
