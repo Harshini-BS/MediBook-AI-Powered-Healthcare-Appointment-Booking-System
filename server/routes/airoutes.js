@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { chatWithAI, suggestDepartment } = require('../controllers/aiController');
+const { chatWithAI, suggestDepartment } = require('../controllers/aicontroller');
 
 router.post('/chat', chatWithAI);
 router.post('/suggest-department', suggestDepartment);
