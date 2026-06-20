@@ -143,8 +143,8 @@ const buildPdfContent = (doc, appointment) => {
       .text('• Contact us at least 24 hours in advance if you need to reschedule.', 65, footerY + 41);
 
     // Page number
-    doc.fillColor('#94a3b8').font('Helvetica').fontSize(8)
-      .text(`Generated on ${new Date().toLocaleString('en-IN')} | MediBook Healthcare System`, 50, doc.page.height - 40, { align: 'center' });
+   doc.fillColor('#94a3b8').font('Helvetica').fontSize(8)
+  .text(`Generated on ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} | MediBook Healthcare System`, 50, doc.page.height - 40, { align: 'center' });
 
   } catch (error) {
     console.error('PDF content build error:', error);
