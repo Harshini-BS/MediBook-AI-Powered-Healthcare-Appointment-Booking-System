@@ -23,20 +23,21 @@ function App() {
     setCancelMessage(null)
   }
 
-  const handleCancelAppointment = async () => {
-    if (!appointmentData?.referenceId) return
-    setCancelLoading(true)
-    setCancelMessage(null)
+ const handleCancelAppointment = async () => {
+  if (!appointmentData?.referenceId) return
+  setCancelLoading(true)
+  setCancelMessage(null)
 
-    try {
-      await appointmentAPI.updateStatus(appointmentData.referenceId, 'cancelled')
-      handleReset()
-    } catch (err) {
-      setCancelMessage('Unable to cancel the appointment right now. Please try again.')
-    } finally {
-      setCancelLoading(false)
-    }
+  try {
+    const res = await appointmentAPI.updateStatus(appointmentData.referenceId, 'cancelled')
+    setAppointmentData(res.data.data) // update status to 'cancelled' in UI, stay on this screen
+    setCancelMessage('Your appointment has been cancelled successfully.')
+  } catch (err) {
+    setCancelMessage('Unable to cancel the appointment right now. Please try again.')
+  } finally {
+    setCancelLoading(false)
   }
+}
 
   if (appointmentData && pdfUrl) {
     return (
@@ -72,22 +73,23 @@ function App() {
 
           <div style={{display: 'flex', gap: 12, flexWrap: 'wrap'}}>
             <a
-              href={`http://localhost:5000${pdfUrl}`}
-              download
-              style={{
-                flex: 1,
-                minWidth: 160,
-                padding: '12px 20px',
-                background: '#0f4c81',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: 8,
-                textAlign: 'center',
-                fontWeight: 600,
-              }}
-            >
-              📥 Download PDF
-            </a>
+             href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api','')}/api/appointments/${appointmentData.referenceId}/pdf`}
+  target="_blank"
+  rel="noopener noreferrer"
+  style={{
+    flex: 1,
+    minWidth: 160,
+    padding: '12px 20px',
+    background: '#0f4c81',
+    color: 'white',
+    textDecoration: 'none',
+    borderRadius: 8,
+    textAlign: 'center',
+    fontWeight: 600,
+  }}
+>
+  📥 Download PDF
+</a>
             <button
               onClick={handleCancelAppointment}
               disabled={cancelLoading || appointmentData.status === 'cancelled'}
