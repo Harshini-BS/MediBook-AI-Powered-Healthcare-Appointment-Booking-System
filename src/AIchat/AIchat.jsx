@@ -130,7 +130,7 @@ const downloadPdf = (referenceId) => {
                         dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
                       />
                       {/* Booking confirmation card */}
-                      // ✅ New version
+                   
                           {msg.isBookingCard && msg.appointment?.referenceId && (
                             <button
                               className="pdf-download-btn"

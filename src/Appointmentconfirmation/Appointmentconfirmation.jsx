@@ -96,7 +96,7 @@ const downloadPdf = () => {
       </div>
 
       <div className="confirmation__actions">
-        // ✅ New version
+    
             {appointment.referenceId && (
             <button className="btn-pdf" onClick={downloadPdf}>
               <Download size={16}/>
