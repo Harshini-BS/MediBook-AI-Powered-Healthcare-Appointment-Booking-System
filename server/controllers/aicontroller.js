@@ -117,6 +117,7 @@ const chatWithAI = async (req, res) => {
     ];
 
     const aiResponse = await callGroq(apiKey, messages);
+    console.log('AI Response:', aiResponse); // debug
 
     // ── Check if AI wants to book an appointment ──
   if (aiResponse.includes('BOOK_APPOINTMENT:')) {
