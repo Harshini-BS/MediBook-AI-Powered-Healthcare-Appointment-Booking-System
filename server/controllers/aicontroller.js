@@ -3,7 +3,7 @@ const { generateAppointmentPDF } = require('../utils/pdfGenerator');
 
 // ─── Groq API Helper ──────────────────────────────────────────────────────────
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'llama-3.1-8b-instant';
 
 const callGroq = async (apiKey, messages, jsonMode = false) => {
   const body = {
