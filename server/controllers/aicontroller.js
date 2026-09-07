@@ -3,7 +3,7 @@ const { generateAppointmentPDF } = require('../utils/pdfGenerator');
 
 // ─── Groq API Helper ──────────────────────────────────────────────────────────
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'gemma2-9b-it';
+const GROQ_MODEL = 'groq/compound-mini';
 
 const callGroq = async (apiKey, messages, jsonMode = false) => {
   const body = {
@@ -11,7 +11,6 @@ const callGroq = async (apiKey, messages, jsonMode = false) => {
     messages,
     temperature: 0.4,
     max_tokens: 1024,
-   
   };
   if (jsonMode) body.response_format = { type: 'json_object' };
 
@@ -30,7 +29,17 @@ const callGroq = async (apiKey, messages, jsonMode = false) => {
   }
 
   const data = await response.json();
-  return data.choices?.[0]?.message?.content || '';
+  
+  // Handle both regular text and tool-call responses
+  const choice = data.choices?.[0];
+  if (choice?.message?.content) {
+    return choice.message.content;
+  }
+  // If model returned tool calls instead of text, extract text from it
+  if (choice?.message?.tool_calls) {
+    return choice.message.tool_calls[0]?.function?.arguments || '';
+  }
+  return '';
 };
 
 // ─── System Prompt ────────────────────────────────────────────────────────────
