@@ -1,49 +1,45 @@
 const Appointment = require('../models/Appointment');
 const { generateAppointmentPDF } = require('../utils/pdfGenerator');
 
-// ─── Groq API Helper ──────────────────────────────────────────────────────────
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'qwen/qwen3.6-27b';
+// ─── Gemini API Helper ────────────────────────────────────────────────────────
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`;
 
-const callGroq = async (apiKey, messages, jsonMode = false) => {
+const callGemini = async (apiKey, messages, jsonMode = false) => {
+  const systemMsg = messages.find(m => m.role === 'system');
+  const chatMessages = messages.filter(m => m.role !== 'system');
+
+  const contents = chatMessages.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
+
   const body = {
-    model: GROQ_MODEL,
-    messages,
-    temperature: 0.4,
-    max_tokens: 1024,
-   
-  };
-  if (jsonMode) body.response_format = { type: 'json_object' };
-
-  const response = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+    contents,
+    generationConfig: {
+      temperature: 0.4,
+      maxOutputTokens: 1024,
+      ...(jsonMode && { responseMimeType: 'application/json' }),
     },
+    ...(systemMsg && {
+      systemInstruction: {
+        parts: [{ text: systemMsg.content }],
+      },
+    }),
+  };
+
+  const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const err = await response.json();
-    throw new Error(err.error?.message || 'Groq API error');
+    throw new Error(err.error?.message || 'Gemini API error');
   }
 
   const data = await response.json();
-
-const choice = data.choices?.[0];
-
-// Handle tool calls gracefully — extract content or arguments
-if (choice?.finish_reason === 'tool_calls' || choice?.message?.tool_calls) {
-  const toolCall = choice.message.tool_calls?.[0];
-  const args = toolCall?.function?.arguments || '';
-  const name = toolCall?.function?.name || '';
-  console.log('Tool call intercepted:', name, args);
-  // Return empty string so it falls through to normal chat response
-  return choice?.message?.content || '';
-}
-
-return choice?.message?.content || '';
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 };
 
 // ─── System Prompt ────────────────────────────────────────────────────────────
@@ -72,14 +68,14 @@ BOOK_APPOINTMENT:{"patientName":"...","age":0,"gender":"...","contactNumber":"..
 
 Email and priority can default to "" and "normal" if not given. Once priority is collected, that is the LAST piece of information needed — output the JSON immediately on your very next response, do not ask anything else.
 
-CHECK FLOW — If user provides a reference ID like MB-XXXX or APT-XXXX and wants to know status:
+CHECK FLOW — If user provides a reference ID like MB-XXXX and wants to know status:
 Respond with ONLY: CHECK_APPOINTMENT:{"referenceId":"..."}
 
 CANCEL FLOW — If user wants to cancel an appointment:
 - First ask for their Reference ID if not already given
 - Once you have the reference ID AND the user has confirmed they want to cancel, respond with ONLY this JSON (no extra text):
 CANCEL_APPOINTMENT:{"referenceId":"..."}
-- Always confirm with the user before cancelling (e.g. "Are you sure you want to cancel appointment MB-XXXX?") — only emit the JSON after they say yes/confirm.
+- Always confirm with the user before cancelling — only emit the JSON after they say yes.
 
 DEPARTMENT SUGGESTION — suggest from: General Medicine, Cardiology, Orthopedics, Neurology, Dermatology, Gynecology, Pediatrics, ENT, Ophthalmology, Psychiatry, Dentistry, Oncology, Urology, Gastroenterology, Pulmonology
 
@@ -97,7 +93,7 @@ const generateReferenceId = () => {
   return `MB-${timestamp}-${random}`;
 };
 
-// ─── Chat with AI (with booking capability) ───────────────────────────────────
+// ─── Chat with AI ─────────────────────────────────────────────────────────────
 const chatWithAI = async (req, res) => {
   try {
     const { message, conversationHistory = [] } = req.body;
@@ -106,9 +102,9 @@ const chatWithAI = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Message is required' });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ success: false, message: 'AI service not configured. Please add GROQ_API_KEY to .env' });
+      return res.status(500).json({ success: false, message: 'AI service not configured. Please add GEMINI_API_KEY to .env' });
     }
 
     const messages = [
@@ -120,16 +116,14 @@ const chatWithAI = async (req, res) => {
       { role: 'user', content: message },
     ];
 
-    const aiResponse = await callGroq(apiKey, messages);
-    console.log('AI Response:', aiResponse); // debug
+    const aiResponse = await callGemini(apiKey, messages);
 
-    // ── Check if AI wants to book an appointment ──
-  if (aiResponse.includes('BOOK_APPOINTMENT:')) {
+    // ── Book appointment ──
+    if (aiResponse.includes('BOOK_APPOINTMENT:')) {
       try {
         const jsonStr = aiResponse.split('BOOK_APPOINTMENT:')[1].trim();
         const appointmentData = JSON.parse(jsonStr);
 
-        // Normalize fields to match schema enums (AI may send inconsistent casing)
         if (appointmentData.gender) {
           const g = appointmentData.gender.toLowerCase();
           appointmentData.gender = g === 'male' ? 'Male' : g === 'female' ? 'Female' : 'Other';
@@ -187,12 +181,11 @@ Please arrive 15 minutes early and carry a valid photo ID. Is there anything els
       }
     }
 
-    // ── Check if AI wants to check appointment status ──
+    // ── Check appointment ──
     if (aiResponse.includes('CHECK_APPOINTMENT:')) {
       try {
         const jsonStr = aiResponse.split('CHECK_APPOINTMENT:')[1].trim();
         const { referenceId } = JSON.parse(jsonStr);
-
         const appointment = await Appointment.findOne({ referenceId });
 
         if (!appointment) {
@@ -227,12 +220,11 @@ Is there anything else you need help with?`;
       }
     }
 
-    // ── Check if AI wants to cancel an appointment ──
+    // ── Cancel appointment ──
     if (aiResponse.includes('CANCEL_APPOINTMENT:')) {
       try {
         const jsonStr = aiResponse.split('CANCEL_APPOINTMENT:')[1].trim();
         const { referenceId } = JSON.parse(jsonStr);
-
         const appointment = await Appointment.findOne({ referenceId });
 
         if (!appointment) {
@@ -271,12 +263,12 @@ If this was a mistake or you'd like to book a new appointment, just let me know!
         console.error('Cancel error:', cancelError);
         return res.json({
           success: true,
-          message: "I couldn't process the cancellation. Please try again or use the Track Appointment page.",
+          message: "I couldn't process the cancellation. Please make sure your Reference ID is correct (format: MB-XXXXXX-XXX) and try again.",
         });
       }
     }
 
-    // ── Normal chat response ──
+    // ── Normal response ──
     res.json({ success: true, message: aiResponse.trim() });
 
   } catch (error) {
@@ -294,7 +286,7 @@ const suggestDepartment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Symptoms are required' });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return res.status(500).json({ success: false, message: 'AI service not configured.' });
     }
@@ -310,7 +302,7 @@ Departments: General Medicine, Cardiology, Orthopedics, Neurology, Dermatology, 
       { role: 'user', content: `Symptoms: ${symptoms}` },
     ];
 
-    const text = await callGroq(apiKey, messages, true);
+    const text = await callGemini(apiKey, messages, true);
 
     try {
       const clean = text.replace(/```json|```/g, '').trim();
