@@ -29,17 +29,20 @@ const callGroq = async (apiKey, messages, jsonMode = false) => {
   }
 
   const data = await response.json();
-  
-  // Handle both regular text and tool-call responses
-  const choice = data.choices?.[0];
-  if (choice?.message?.content) {
-    return choice.message.content;
-  }
-  // If model returned tool calls instead of text, extract text from it
-  if (choice?.message?.tool_calls) {
-    return choice.message.tool_calls[0]?.function?.arguments || '';
-  }
-  return '';
+
+const choice = data.choices?.[0];
+
+// Handle tool calls gracefully — extract content or arguments
+if (choice?.finish_reason === 'tool_calls' || choice?.message?.tool_calls) {
+  const toolCall = choice.message.tool_calls?.[0];
+  const args = toolCall?.function?.arguments || '';
+  const name = toolCall?.function?.name || '';
+  console.log('Tool call intercepted:', name, args);
+  // Return empty string so it falls through to normal chat response
+  return choice?.message?.content || '';
+}
+
+return choice?.message?.content || '';
 };
 
 // ─── System Prompt ────────────────────────────────────────────────────────────
