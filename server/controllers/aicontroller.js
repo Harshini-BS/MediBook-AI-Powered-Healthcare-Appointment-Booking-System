@@ -2,7 +2,8 @@ const Appointment = require('../models/Appointment');
 const { generateAppointmentPDF } = require('../utils/pdfGenerator');
 
 // ─── Gemini API Helper ────────────────────────────────────────────────────────
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`;
 
 const callGemini = async (apiKey, messages, jsonMode = false) => {
   const systemMsg = messages.find(m => m.role === 'system');
