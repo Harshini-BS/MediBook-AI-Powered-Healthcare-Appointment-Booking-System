@@ -10,7 +10,7 @@ const callGroq = async (apiKey, messages, jsonMode = false) => {
     messages,
     temperature: 0.4,
     max_tokens: 1024,
-     tool_choice: 'none',
+    
   };
   if (jsonMode) body.response_format = { type: 'json_object' };
 
